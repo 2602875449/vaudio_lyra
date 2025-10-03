@@ -1,4 +1,4 @@
-# Final, corrected GitHub Actions workflow file
+# Final, complete GitHub Actions workflow file
 # File path: .github/workflows/c-cpp.yml
 
 name: Build Android Example
@@ -116,6 +116,19 @@ jobs:
           echo '    remote = "https://github.com/google/glog.git",' >> WORKSPACE
           echo '    commit = "v0.6.0",' >> WORKSPACE
           echo ')' >> WORKSPACE
+          # =======================  New addition to fix the error =======================
+          echo '' >> WORKSPACE
+          echo '# Bazel Android build rules' >> WORKSPACE
+          echo 'http_archive(' >> WORKSPACE
+          echo '    name = "rules_android",' >> WORKSPACE
+          echo '    sha256 = "29431a47942a7090f7a63753503f840c8a6f3b9c3f0b42a991a0a5af105e4c01",' >> WORKSPACE
+          echo '    strip_prefix = "rules_android-0.1.1",' >> WORKSPACE
+          echo '    urls = [' >> WORKSPACE
+          echo '        "https://mirror.bazel.build/github.com/bazelbuild/rules_android/archive/v0.1.1.zip",' >> WORKSPACE
+          echo '        "https://github.com/bazelbuild/rules_android/archive/v0.1.1.zip",' >> WORKSPACE
+          echo '    ],' >> WORKSPACE
+          echo ')' >> WORKSPACE
+          # ==============================================================================
           echo "WORKSPACE file has been recreated successfully."
 
       - name: Set up Python 3.9
@@ -168,13 +181,11 @@ jobs:
         run: |
           PY_BIN="$(which python)"
           echo "Using PYTHON_BIN_PATH=$PY_BIN"
-          # =======================  The typo is fixed here (removed space) =======================
           TF_NEED_CUDA=0 bazel build -c opt \
             //lyra/android_example:lyra_android_example \
             --fat_apk_cpu=armeabi-v7a,arm64-v8a \
             --copt=-DBENCHMARK \
             --repo_env=PYTHON_BIN_PATH="$PY_BIN"
-          # ======================================================================================
 
       - name: Collect artifact
         run: |
