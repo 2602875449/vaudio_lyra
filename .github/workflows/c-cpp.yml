@@ -50,17 +50,16 @@ jobs:
           echo '# TensorFlow.' >> WORKSPACE
           echo 'http_archive(' >> WORKSPACE
           echo '    name = "org_tensorflow",' >> WORKSPACE
-          echo '    sha256 = "233875ea27fc357f6b714b2a0de5f6ff124b50c1ee9b3b41f9e726e9e677b86c",' >> WORKSPACE
+          echo '    sha26 = "233875ea27fc357f6b714b2a0de5f6ff124b50c1ee9b3b41f9e726e9e677b86c",' >> WORKSPACE
           echo '    strip_prefix = "tensorflow-2.5.0",' >> WORKSPACE
           echo '    urls = ["https://github.com/tensorflow/tensorflow/archive/v2.5.0.tar.gz"],' >> WORKSPACE
           echo ')' >> WORKSPACE
           echo '' >> WORKSPACE
-          # =======================  唯一的修改在这里 (第1处)  =======================
           echo 'load("@org_tensorflow//tensorflow:workspace3.bzl", "tf_workspace3")' >> WORKSPACE
           echo '' >> WORKSPACE
-          # =======================  唯一的修改在这里 (第2处)  =======================
-          echo 'tf_workspace3(tf_repo_name = "org_tensorflow")' >> WORKSPACE
-          # =====================================================================
+          # =======================  最后的修改在这里  =======================
+          echo 'tf_workspace3()' >> WORKSPACE
+          # ================================================================
           echo '' >> WORKSPACE
           echo 'git_repository(' >> WORKSPACE
           echo '    name = "com_google_protobuf",' >> WORKSPACE
