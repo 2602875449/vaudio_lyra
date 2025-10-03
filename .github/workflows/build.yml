@@ -1,0 +1,47 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  android-example:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      # 如果仓库里已有这个 composite action（安装 Bazelisk、Android SDK/NDK 等），保留
+      - name: Setup Lyra dependencies
+        uses: ./.github/actions/setup-lyra-deps
+
+      - name: Build Android App (fat APK: armeabi-v7a + arm64-v8a)
+        shell: bash
+        run: |
+          # 若 setup-lyra-deps 没设置 NDK，这里兜底一下：
+          export ANDROID_NDK_HOME="${ANDROID_HOME}/ndk/21.4.7075529"
+          # 关键：把 Python 传给 TensorFlow 的 fetch 阶段
+          PY_BIN="$(which python)"
+          echo "Using PYTHON_BIN_PATH=${PY_BIN}"
+          bazelisk build lyra/android_example:lyra_android_example \
+            --fat_apk_cpu=armeabi-v7a,arm64-v8a \
+            --copt=-DBENCHMARK \
+            --repo_env=PYTHON_BIN_PATH="${PY_BIN}"
+
+      - name: Copy artifacts
+        shell: bash
+        run: |
+          mkdir -p action-product
+          cp bazel-bin/lyra/android_example/lyra_android_example.apk action-product/lyra_example-fat.apk
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lyra-android-example-fat
+          path: action-product/
