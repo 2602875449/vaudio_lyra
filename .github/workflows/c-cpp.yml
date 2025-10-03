@@ -1,9 +1,6 @@
 name: build
 
-permissions:
-  contents: read
-
-"on":
+on:
   push:
   pull_request:
   workflow_dispatch:
@@ -27,22 +24,20 @@ jobs:
         with:
           python-version: '3.9'
 
+      # 供 TF 配置脚本使用
       - name: Install Python deps for TF configure
         run: |
           python -m pip install --upgrade pip
           python -m pip install "numpy==1.26.4" six
 
-      # 自动修补 WORKSPACE：把 @gflags 映射到 @com_github_gflags_gflags
+      # ★ 关键补丁：在 WORKSPACE 里给 com_google_glog 增加 repo_mapping，把 @gflags 映射到 @com_github_gflags_gflags
       - name: Patch WORKSPACE to map @gflags -> @com_github_gflags_gflags
         shell: bash
         run: |
           set -euo pipefail
-          WS_FILE=""
-          if [[ -f "WORKSPACE" ]]; then
-            WS_FILE="WORKSPACE"
-          elif [[ -f "WORKSPACE.bazel" ]]; then
-            WS_FILE="WORKSPACE.bazel"
-          else
+          WS="WORKSPACE"
+          [[ -f "$WS" ]] || WS="WORKSPACE.bazel"
+          if [[ ! -f "$WS" ]]; then
             echo "ERROR: WORKSPACE file not found at repo root." >&2
             exit 1
           fi
@@ -54,8 +49,7 @@ if not p.exists():
     p = pathlib.Path("WORKSPACE.bazel")
 txt = p.read_text(encoding="utf-8")
 
-pat = re.compile(r'(git_repository\s*\(\s*name\s*=\s*"com_google_glog"[^)]*\))', re.DOTALL)
-m = pat.search(txt)
+m = re.search(r'(git_repository\s*\(\s*name\s*=\s*"com_google_glog"[^)]*\))', txt, re.DOTALL)
 if not m:
     print("No com_google_glog git_repository block found; skipping patch.")
     sys.exit(0)
@@ -88,6 +82,7 @@ else:
     print("com_google_glog already has proper repo_mapping; no changes.")
 PY
 
+      # 用 JDK 17 接受 cmdline-tools 许可
       - name: Set up Java 17 for Android cmdline-tools
         uses: actions/setup-java@v4
         with:
@@ -111,6 +106,7 @@ PY
             "ndk;${NDK_VERSION}"
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}" >> $GITHUB_ENV
 
+      # 切回 JDK 11 给 Bazel（对 4/5.x 更稳）
       - name: Switch to Java 11 for Bazel
         uses: actions/setup-java@v4
         with:
