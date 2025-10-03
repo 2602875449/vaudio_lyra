@@ -1,4 +1,4 @@
-# The Final, Corrected GitHub Actions Workflow
+# The Final Workflow
 # File path: .github/workflows/c-cpp.yml
 
 name: Build Android Example
@@ -120,15 +120,27 @@ jobs:
           echo '# Bazel Android build rules' >> WORKSPACE
           echo 'http_archive(' >> WORKSPACE
           echo '    name = "rules_android",' >> WORKSPACE
-          # =======================  The final fix is here =======================
           echo '    sha256 = "cd06d15dd8bb59926e4d65f9003bfc20f9da4b2519985c27e190cddc8b7a7806",' >> WORKSPACE
-          # =====================================================================
           echo '    strip_prefix = "rules_android-0.1.1",' >> WORKSPACE
           echo '    urls = [' >> WORKSPACE
           echo '        "https://mirror.bazel.build/github.com/bazelbuild/rules_android/archive/v0.1.1.zip",' >> WORKSPACE
           echo '        "https://github.com/bazelbuild/rules_android/archive/v0.1.1.zip",' >> WORKSPACE
           echo '    ],' >> WORKSPACE
           echo ')' >> WORKSPACE
+          # =======================  New addition to fix the toolchain error =======================
+          echo '' >> WORKSPACE
+          echo '# Register the Android SDK and NDK with Bazel' >> WORKSPACE
+          echo 'load("@rules_android//android:android_repositories.bzl", "android_sdk_repository", "android_ndk_repository")' >> WORKSPACE
+          echo '' >> WORKSPACE
+          echo 'android_sdk_repository(' >> WORKSPACE
+          echo '    name = "androidsdk",' >> WORKSPACE
+          echo ')' >> WORKSPACE
+          echo '' >> WORKSPACE
+          echo 'android_ndk_repository(' >> WORKSPACE
+          echo '    name = "androidndk",' >> WORKSPACE
+          echo '    api_level = 30,' >> WORKSPACE
+          echo ')' >> WORKSPACE
+          # =====================================================================================
           echo "WORKSPACE file has been recreated successfully."
 
       - name: Set up Python 3.9
