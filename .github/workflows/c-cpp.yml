@@ -20,11 +20,11 @@ jobs:
         uses: actions/checkout@v4
 
       # ====================================================================
-      # 最终方案：使用 'echo' 命令逐行写入，彻底避免 YAML 解析错误
+      # 使用 'echo' 命令逐行写入，彻底避免 YAML 解析错误
       # ====================================================================
       - name: Recreate WORKSPACE file line-by-line
         run: |
-          echo "Recreating WORKSPACE file to fix all dependency issues..."
+          echo "Recreating WORKSPACE file with all fixes..."
           echo '# Copyright 2021 Google LLC' > WORKSPACE
           echo '#' >> WORKSPACE
           echo '# Licensed under the Apache License, Version 2.0 (the "License");' >> WORKSPACE
@@ -47,7 +47,9 @@ jobs:
           echo '# TensorFlow.' >> WORKSPACE
           echo 'http_archive(' >> WORKSPACE
           echo '    name = "org_tensorflow",' >> WORKSPACE
-          echo '    sha256 = "c241ea9b392398904bceac5c1844f9175b5a8377759c256747d6d7e97d165df9",' >> WORKSPACE
+          # =======================  唯一的修改在这里  =======================
+          echo '    sha256 = "233875ea27fc357f6b714b2a0de5f6ff124b50c1ee9b3b41f9e726e9e677b86c",' >> WORKSPACE
+          # ================================================================
           echo '    strip_prefix = "tensorflow-2.5.0",' >> WORKSPACE
           echo '    urls = ["https://github.com/tensorflow/tensorflow/archive/v2.5.0.tar.gz"],' >> WORKSPACE
           echo ')' >> WORKSPACE
@@ -117,7 +119,7 @@ jobs:
           echo '    commit = "v0.6.0",' >> WORKSPACE
           echo ')' >> WORKSPACE
           echo "WORKSPACE file has been recreated successfully."
-          
+
       - name: Set up Python 3.9
         uses: actions/setup-python@v5
         with:
@@ -168,19 +170,19 @@ jobs:
         run: |
           PY_BIN="$(which python)"
           echo "Using PYTHON_BIN_PATH=$PY_BIN"
-          # Added --incompatible_legacy_local_fallback=false to solve potential TensorFlow configure issues
-          # Also updating build command to match repo's example
           TF_NEED_CUDA=0 bazel build -c opt \
-            --config=android_arm64 \
-            //lyra/android_example:lyra_android_example
+            //lyra/android_example:lyra_android_example \
+            --fat_apk_cpu=armeabi-v7a,arm64-v8a \
+            --copt=-DBENCHMARK \
+            --repo_env=PYTHON_BIN_PATH="$PY_BIN"
 
       - name: Collect artifact
         run: |
           mkdir -p action-product
-          cp bazel-bin/lyra/android_example/lyra_android_example.apk action-product/lyra_example.apk
+          cp bazel-bin/lyra/android_example/lyra_android_example.apk action-product/lyra_example-fat.apk
           
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: lyra-android-example
+          name: lyra-android-example-fat
           path: action-product/
