@@ -24,7 +24,13 @@ jobs:
         with:
           python-version: '3.9'
 
-      # 用 JDK 17 来跑 sdkmanager（cmdline-tools 11076708 需要 Java 17）
+      # 关键：给当前 Python 装 numpy 和 six（供 TF 配置脚本使用）
+      - name: Install Python deps for TF configure
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "numpy==1.26.4" six
+
+      # 用 JDK 17 运行 sdkmanager（对应新版 cmdline-tools）
       - name: Set up Java 17 for Android cmdline-tools
         uses: actions/setup-java@v4
         with:
@@ -48,8 +54,8 @@ jobs:
             "ndk;${NDK_VERSION}"
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}" >> $GITHUB_ENV
 
-      # （可选）切回 JDK 11 给 Bazel 用；Bazel 5.x 对 11 最稳
-      - name: Switch to Java 11 for Bazel build
+      # 可选：切回 JDK 11 给 Bazel（Bazel 5.x 在 11 更稳；不切也多数能过）
+      - name: Switch to Java 11 for Bazel
         uses: actions/setup-java@v4
         with:
           distribution: temurin
