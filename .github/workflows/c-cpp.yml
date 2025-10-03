@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  android-example:
+  android-build:
     runs-on: ubuntu-latest
     env:
       ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
@@ -24,12 +24,12 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install Python deps for TF configure
+      - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "numpy==1.26.4" six
+          python -m pip install numpy==1.26.4 six
 
-      - name: Set up Java 17 for Android cmdline-tools
+      - name: Set up Java 17 for Android tools
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -52,8 +52,7 @@ jobs:
             "ndk;${NDK_VERSION}"
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}" >> $GITHUB_ENV
 
-      # 可选：切回 JDK 11 给 Bazel；不切也多数能过
-      - name: Switch to Java 11 for Bazel
+      - name: Switch Java to 11 for Bazel
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -66,11 +65,24 @@ jobs:
           sudo mv bazelisk /usr/local/bin/bazel
           bazel --version
 
-      - name: Patch WORKSPACE (alias gflags)
+      - name: Patch WORKSPACE (fix glog & gflags)
         run: |
-          if ! grep -q 'repository_alias(.*name *= *"gflags"' WORKSPACE; then
-            echo 'load("@bazel_tools//tools/build_defs/repo:repo.bzl", "repository_alias")' >> WORKSPACE
-            echo 'repository_alias(name = "gflags", actual = "@com_github_gflags_gflags")' >> WORKSPACE
+          set -euo pipefail
+
+          # pin glog
+          sed -i '/name *= *"com_google_glog"/,/)/c\git_repository(\n    name = "com_google_glog",\n    remote = "https://github.com/google/glog.git",\n    tag = "v0.7.0",\n)' WORKSPACE
+
+          # add gflags if missing
+          if ! grep -q 'name *= *"gflags"' WORKSPACE; then
+            cat >> WORKSPACE <<'EOF'
+
+# Added by CI
+git_repository(
+    name = "gflags",
+    remote = "https://github.com/gflags/gflags.git",
+    tag = "v2.2.2",
+)
+EOF
           fi
 
       - name: Build Android App (fat APK)
