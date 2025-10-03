@@ -1,4 +1,4 @@
-# Final, complete GitHub Actions workflow file
+# The Final, Corrected GitHub Actions Workflow
 # File path: .github/workflows/c-cpp.yml
 
 name: Build Android Example
@@ -22,7 +22,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Recreate WORKSPACE file line-by-line
+      - name: Recreate WORKSPACE file with all fixes
         run: |
           echo "Recreating WORKSPACE file with all fixes..."
           echo '# Copyright 2021 Google LLC' > WORKSPACE
@@ -116,19 +116,19 @@ jobs:
           echo '    remote = "https://github.com/google/glog.git",' >> WORKSPACE
           echo '    commit = "v0.6.0",' >> WORKSPACE
           echo ')' >> WORKSPACE
-          # =======================  New addition to fix the error =======================
           echo '' >> WORKSPACE
           echo '# Bazel Android build rules' >> WORKSPACE
           echo 'http_archive(' >> WORKSPACE
           echo '    name = "rules_android",' >> WORKSPACE
-          echo '    sha256 = "29431a47942a7090f7a63753503f840c8a6f3b9c3f0b42a991a0a5af105e4c01",' >> WORKSPACE
+          # =======================  The final fix is here =======================
+          echo '    sha256 = "cd06d15dd8bb59926e4d65f9003bfc20f9da4b2519985c27e190cddc8b7a7806",' >> WORKSPACE
+          # =====================================================================
           echo '    strip_prefix = "rules_android-0.1.1",' >> WORKSPACE
           echo '    urls = [' >> WORKSPACE
           echo '        "https://mirror.bazel.build/github.com/bazelbuild/rules_android/archive/v0.1.1.zip",' >> WORKSPACE
           echo '        "https://github.com/bazelbuild/rules_android/archive/v0.1.1.zip",' >> WORKSPACE
           echo '    ],' >> WORKSPACE
           echo ')' >> WORKSPACE
-          # ==============================================================================
           echo "WORKSPACE file has been recreated successfully."
 
       - name: Set up Python 3.9
