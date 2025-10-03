@@ -24,13 +24,83 @@ jobs:
         with:
           python-version: '3.9'
 
-      # 关键：给当前 Python 装 numpy 和 six（供 TF 配置脚本使用）
+      # 供 TF 配置脚本使用
       - name: Install Python deps for TF configure
         run: |
           python -m pip install --upgrade pip
           python -m pip install "numpy==1.26.4" six
 
-      # 用 JDK 17 运行 sdkmanager（对应新版 cmdline-tools）
+      # --- 关键修补：自动给 WORKSPACE 的 com_google_glog 增加 repo_mapping ---
+      - name: Patch WORKSPACE to map @gflags -> @com_github_gflags_gflags
+        shell: bash
+        run: |
+          set -euo pipefail
+          WS_FILE=""
+          if [[ -f "WORKSPACE" ]]; then
+            WS_FILE="WORKSPACE"
+          elif [[ -f "WORKSPACE.bazel" ]]; then
+            WS_FILE="WORKSPACE.bazel"
+          else
+            echo "ERROR: WORKSPACE file not found at repo root." >&2
+            exit 1
+          fi
+
+          python - << 'PY'
+import re, sys, pathlib
+p = pathlib.Path("WORKSPACE")
+if not p.exists():
+    p = pathlib.Path("WORKSPACE.bazel")
+txt = p.read_text(encoding="utf-8")
+
+# 匹配 com_google_glog 的 git_repository 块（宽松正则，跨行）
+pat = re.compile(
+    r'(git_repository\s*\(\s*name\s*=\s*"com_google_glog"[^)]*\))',
+    re.DOTALL
+)
+
+m = pat.search(txt)
+if not m:
+    print("No com_google_glog git_repository block found; skipping patch.")
+    sys.exit(0)
+
+block = m.group(1)
+
+# 已有 repo_mapping 则仅确保包含映射项；否则新增整个 repo_mapping
+if "repo_mapping" in block:
+    # 若无 @gflags 映射则补充
+    if '@gflags' not in block:
+        block_new = re.sub(
+            r'repo_mapping\s*=\s*\{',
+            'repo_mapping = {\n        "@gflags": "@com_github_gflags_gflags",',
+            block,
+            count=1,
+            flags=re.DOTALL
+        )
+    else:
+        block_new = block
+else:
+    # 在最后一个右括号前插入 repo_mapping
+    # 尝试在结尾处最近一行的逗号风格插入
+    block_new = re.sub(
+        r'\)\s*$',
+        '    repo_mapping = {\n'
+        '        "@gflags": "@com_github_gflags_gflags",\n'
+        '    },\n'
+        ')\n',
+        block,
+        count=1,
+        flags=re.DOTALL
+    )
+
+if block_new != block:
+    txt = txt.replace(block, block_new)
+    p.write_text(txt, encoding="utf-8")
+    print(f"Patched {p.name}: added/updated repo_mapping for com_google_glog.")
+else:
+    print("com_google_glog already has proper repo_mapping; no changes.")
+PY
+
+      # 用 JDK 17 接受新 cmdline-tools 许可
       - name: Set up Java 17 for Android cmdline-tools
         uses: actions/setup-java@v4
         with:
@@ -54,7 +124,7 @@ jobs:
             "ndk;${NDK_VERSION}"
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}" >> $GITHUB_ENV
 
-      # 可选：切回 JDK 11 给 Bazel（Bazel 5.x 在 11 更稳；不切也多数能过）
+      # 切回 JDK 11 给 Bazel（对 4/5.x 系更稳）
       - name: Switch to Java 11 for Bazel
         uses: actions/setup-java@v4
         with:
@@ -72,6 +142,8 @@ jobs:
         run: |
           PY_BIN="$(which python)"
           echo "Using PYTHON_BIN_PATH=$PY_BIN"
+          # 先同步外部仓，日志更清晰
+          bazel sync --configure
           bazel build -c opt \
             lyra/android_example:lyra_android_example \
             --fat_apk_cpu=armeabi-v7a,arm64-v8a \
