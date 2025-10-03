@@ -21,17 +21,17 @@ jobs:
 
       # ====================================================================
       # 新增步骤：在构建前动态修复 WORKSPACE 文件中的依赖问题
-      # - 修复失效的 Google Storage 镜像链接
-      # - 为 gflags 创建别名以解决 glog 依赖解析错误
       # ====================================================================
       - name: Fix Bazel WORKSPACE dependencies
         run: |
           echo "Fixing broken dependency URLs..."
+          # 1. 批量替换所有失效的 Google Storage 镜像链接为 GitHub 原始链接
           sed -i 's|https://storage.googleapis.com/mirror.tensorflow.org/|https://|g' WORKSPACE
 
           echo "Fixing gflags dependency name..."
+          # 2. 在 WORKSPACE 文件末尾添加 bind 规则，解决 gflags 名称问题 (已去掉错误的 "native." 前缀)
           echo '' >> WORKSPACE
-          echo 'native.bind(' >> WORKSPACE
+          echo 'bind(' >> WORKSPACE
           echo '    name = "gflags",' >> WORKSPACE
           echo '    actual = "@com_github_gflags_gflags",' >> WORKSPACE
           echo ')' >> WORKSPACE
