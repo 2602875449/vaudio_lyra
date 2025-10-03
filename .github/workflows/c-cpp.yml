@@ -1,5 +1,5 @@
-# 最终的、已修正的 GitHub Actions workflow 配置文件
-# 文件路径: .github/workflows/c-cpp.yml
+# Final, corrected GitHub Actions workflow file
+# File path: .github/workflows/c-cpp.yml
 
 name: Build Android Example
 
@@ -22,9 +22,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # ====================================================================
-      # 使用 'echo' 命令逐行写入，彻底避免 YAML 解析错误
-      # ====================================================================
       - name: Recreate WORKSPACE file line-by-line
         run: |
           echo "Recreating WORKSPACE file with all fixes..."
@@ -50,16 +47,16 @@ jobs:
           echo '# TensorFlow.' >> WORKSPACE
           echo 'http_archive(' >> WORKSPACE
           echo '    name = "org_tensorflow",' >> WORKSPACE
-          echo '    sha26 = "233875ea27fc357f6b714b2a0de5f6ff124b50c1ee9b3b41f9e726e9e677b86c",' >> WORKSPACE
+          # =======================  The typo is fixed here  =======================
+          echo '    sha256 = "233875ea27fc357f6b714b2a0de5f6ff124b50c1ee9b3b41f9e726e9e677b86c",' >> WORKSPACE
+          # =====================================================================
           echo '    strip_prefix = "tensorflow-2.5.0",' >> WORKSPACE
           echo '    urls = ["https://github.com/tensorflow/tensorflow/archive/v2.5.0.tar.gz"],' >> WORKSPACE
           echo ')' >> WORKSPACE
           echo '' >> WORKSPACE
           echo 'load("@org_tensorflow//tensorflow:workspace3.bzl", "tf_workspace3")' >> WORKSPACE
           echo '' >> WORKSPACE
-          # =======================  最后的修改在这里  =======================
           echo 'tf_workspace3()' >> WORKSPACE
-          # ================================================================
           echo '' >> WORKSPACE
           echo 'git_repository(' >> WORKSPACE
           echo '    name = "com_google_protobuf",' >> WORKSPACE
@@ -173,7 +170,7 @@ jobs:
         run: |
           PY_BIN="$(which python)"
           echo "Using PYTHON_BIN_PATH=$PY_BIN"
-          TF_NEED_CUDA=0 bazel build -c opt \
+          TF_NEED_ CUDA=0 bazel build -c opt \
             //lyra/android_example:lyra_android_example \
             --fat_apk_cpu=armeabi-v7a,arm64-v8a \
             --copt=-DBENCHMARK \
