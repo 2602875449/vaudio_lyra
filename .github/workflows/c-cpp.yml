@@ -1,4 +1,4 @@
-name: build
+name: build 
 
 on:
   push:
@@ -24,65 +24,12 @@ jobs:
         with:
           python-version: '3.9'
 
-      # 供 TF 配置脚本使用
+      # 关键：给当前 Python 装 numpy 和 six（供 TF 配置脚本使用）
       - name: Install Python deps for TF configure
         run: |
           python -m pip install --upgrade pip
           python -m pip install "numpy==1.26.4" six
-
-      # ★ 关键补丁：在 WORKSPACE 里给 com_google_glog 增加 repo_mapping，把 @gflags 映射到 @com_github_gflags_gflags
-      - name: Patch WORKSPACE to map @gflags -> @com_github_gflags_gflags
-        shell: bash
-        run: |
-          set -euo pipefail
-          WS="WORKSPACE"
-          [[ -f "$WS" ]] || WS="WORKSPACE.bazel"
-          if [[ ! -f "$WS" ]]; then
-            echo "ERROR: WORKSPACE file not found at repo root." >&2
-            exit 1
-          fi
-
-          python - << 'PY'
-import re, sys, pathlib
-p = pathlib.Path("WORKSPACE")
-if not p.exists():
-    p = pathlib.Path("WORKSPACE.bazel")
-txt = p.read_text(encoding="utf-8")
-
-m = re.search(r'(git_repository\s*\(\s*name\s*=\s*"com_google_glog"[^)]*\))', txt, re.DOTALL)
-if not m:
-    print("No com_google_glog git_repository block found; skipping patch.")
-    sys.exit(0)
-
-block = m.group(1)
-if "repo_mapping" in block:
-    if '@gflags' not in block:
-        block_new = re.sub(
-            r'repo_mapping\s*=\s*\{',
-            'repo_mapping = {\n        "@gflags": "@com_github_gflags_gflags",',
-            block, count=1, flags=re.DOTALL
-        )
-    else:
-        block_new = block
-else:
-    block_new = re.sub(
-        r'\)\s*$',
-        '    repo_mapping = {\n'
-        '        "@gflags": "@com_github_gflags_gflags",\n'
-        '    },\n'
-        ')\n',
-        block, count=1, flags=re.DOTALL
-    )
-
-if block_new != block:
-    txt = txt.replace(block, block_new)
-    p.write_text(txt, encoding="utf-8")
-    print(f"Patched {p.name}: added/updated repo_mapping for com_google_glog.")
-else:
-    print("com_google_glog already has proper repo_mapping; no changes.")
-PY
-
-      # 用 JDK 17 接受 cmdline-tools 许可
+      # 用 JDK 17 运行 sdkmanager（对应新版 cmdline-tools）
       - name: Set up Java 17 for Android cmdline-tools
         uses: actions/setup-java@v4
         with:
@@ -96,7 +43,6 @@ PY
           unzip -q cmdtools.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
           mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
           yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses
-
       - name: Install Android SDK/NDK components
         run: |
           "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
@@ -105,8 +51,7 @@ PY
             "platform-tools" \
             "ndk;${NDK_VERSION}"
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}" >> $GITHUB_ENV
-
-      # 切回 JDK 11 给 Bazel（对 4/5.x 更稳）
+      # 可选：切回 JDK 11 给 Bazel（Bazel 5.x 在 11 更稳；不切也多数能过）
       - name: Switch to Java 11 for Bazel
         uses: actions/setup-java@v4
         with:
@@ -119,23 +64,19 @@ PY
           chmod +x bazelisk
           sudo mv bazelisk /usr/local/bin/bazel
           bazel --version
-
       - name: Build Android App (fat APK)
         run: |
           PY_BIN="$(which python)"
           echo "Using PYTHON_BIN_PATH=$PY_BIN"
-          bazel sync --configure
           bazel build -c opt \
             lyra/android_example:lyra_android_example \
             --fat_apk_cpu=armeabi-v7a,arm64-v8a \
             --copt=-DBENCHMARK \
             --repo_env=PYTHON_BIN_PATH="$PY_BIN"
-
       - name: Collect artifact
         run: |
           mkdir -p action-product
           cp bazel-bin/lyra/android_example/lyra_android_example.apk action-product/lyra_example-fat.apk
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
