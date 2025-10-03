@@ -24,13 +24,11 @@ jobs:
         with:
           python-version: '3.9'
 
-      # 关键：给当前 Python 装 numpy 和 six（供 TF 配置脚本使用）
       - name: Install Python deps for TF configure
         run: |
           python -m pip install --upgrade pip
           python -m pip install "numpy==1.26.4" six
 
-      # 用 JDK 17 运行 sdkmanager（对应新版 cmdline-tools）
       - name: Set up Java 17 for Android cmdline-tools
         uses: actions/setup-java@v4
         with:
@@ -54,7 +52,7 @@ jobs:
             "ndk;${NDK_VERSION}"
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}" >> $GITHUB_ENV
 
-      # 可选：切回 JDK 11 给 Bazel（Bazel 5.x 在 11 更稳；不切也多数能过）
+      # 可选：切回 JDK 11 给 Bazel；不切也多数能过
       - name: Switch to Java 11 for Bazel
         uses: actions/setup-java@v4
         with:
@@ -67,6 +65,13 @@ jobs:
           chmod +x bazelisk
           sudo mv bazelisk /usr/local/bin/bazel
           bazel --version
+
+      - name: Patch WORKSPACE (alias gflags)
+        run: |
+          if ! grep -q 'repository_alias(.*name *= *"gflags"' WORKSPACE; then
+            echo 'load("@bazel_tools//tools/build_defs/repo:repo.bzl", "repository_alias")' >> WORKSPACE
+            echo 'repository_alias(name = "gflags", actual = "@com_github_gflags_gflags")' >> WORKSPACE
+          fi
 
       - name: Build Android App (fat APK)
         run: |
