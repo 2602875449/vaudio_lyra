@@ -128,11 +128,16 @@ jobs:
           echo '    ],' >> WORKSPACE
           echo ')' >> WORKSPACE
           echo '' >> WORKSPACE
-          echo '# Register the Android SDK and NDK with Bazel' >> WORKSPACE
-          # =======================  The final fix is here =======================
-          echo 'load("@rules_android//android:android.bzl", "android_sdk_repository", "android_ndk_repository")' >> WORKSPACE
-          # =====================================================================
+          # =======================  New fix is here =======================
+          echo '# Setup Android dependencies and register SDK/NDK' >> WORKSPACE
+          # Load all necessary functions, including the dependency setup function
+          echo 'load("@rules_android//android:android.bzl", "android_rules_dependencies", "android_sdk_repository", "android_ndk_repository")' >> WORKSPACE
           echo '' >> WORKSPACE
+          # Call the dependency setup function FIRST
+          echo 'android_rules_dependencies()' >> WORKSPACE
+          # ===============================================================
+          echo '' >> WORKSPACE
+          echo '# Now register the local SDK and NDK' >> WORKSPACE
           echo 'android_sdk_repository(' >> WORKSPACE
           echo '    name = "androidsdk",' >> WORKSPACE
           echo ')' >> WORKSPACE
