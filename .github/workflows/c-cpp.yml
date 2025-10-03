@@ -47,9 +47,7 @@ jobs:
           echo '# TensorFlow.' >> WORKSPACE
           echo 'http_archive(' >> WORKSPACE
           echo '    name = "org_tensorflow",' >> WORKSPACE
-          # =======================  The typo is fixed here  =======================
           echo '    sha256 = "233875ea27fc357f6b714b2a0de5f6ff124b50c1ee9b3b41f9e726e9e677b86c",' >> WORKSPACE
-          # =====================================================================
           echo '    strip_prefix = "tensorflow-2.5.0",' >> WORKSPACE
           echo '    urls = ["https://github.com/tensorflow/tensorflow/archive/v2.5.0.tar.gz"],' >> WORKSPACE
           echo ')' >> WORKSPACE
@@ -170,11 +168,13 @@ jobs:
         run: |
           PY_BIN="$(which python)"
           echo "Using PYTHON_BIN_PATH=$PY_BIN"
-          TF_NEED_ CUDA=0 bazel build -c opt \
+          # =======================  The typo is fixed here (removed space) =======================
+          TF_NEED_CUDA=0 bazel build -c opt \
             //lyra/android_example:lyra_android_example \
             --fat_apk_cpu=armeabi-v7a,arm64-v8a \
             --copt=-DBENCHMARK \
             --repo_env=PYTHON_BIN_PATH="$PY_BIN"
+          # ======================================================================================
 
       - name: Collect artifact
         run: |
