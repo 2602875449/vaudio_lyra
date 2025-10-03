@@ -20,21 +20,38 @@ jobs:
         uses: actions/checkout@v4
 
       # ====================================================================
-      # 新增步骤：在构建前动态修复 WORKSPACE 文件中的依赖问题
+      # 新增步骤：根据社区方案，彻底修复 WORKSPACE 文件中的依赖问题
+      # - 修复所有失效的 Google Storage 镜像链接
+      # - 注释掉旧的 gflags 和 glog 定义
+      # - 添加新的、正确的 gflags 和 glog 定义
       # ====================================================================
       - name: Fix Bazel WORKSPACE dependencies
         run: |
           echo "Fixing broken dependency URLs..."
-          # 1. 批量替换所有失效的 Google Storage 镜像链接为 GitHub 原始链接
           sed -i 's|https://storage.googleapis.com/mirror.tensorflow.org/|https://|g' WORKSPACE
 
-          echo "Fixing gflags dependency name..."
-          # 2. 在 WORKSPACE 文件末尾添加 bind 规则，解决 gflags 名称问题 (已去掉错误的 "native." 前缀)
-          echo '' >> WORKSPACE
-          echo 'bind(' >> WORKSPACE
-          echo '    name = "gflags",' >> WORKSPACE
-          echo '    actual = "@com_github_gflags_gflags",' >> WORKSPACE
-          echo ')' >> WORKSPACE
+          echo "Replacing gflags and glog repository definitions..."
+          # 注释掉旧的、有问题的 gflags 和 glog 定义
+          sed -i -e '/name = "com_github_gflags_gflags"/,/}
+/s/^/#/' WORKSPACE
+          sed -i -e '/name = "com_google_glog"/,/}
+/s/^/#/' WORKSPACE
+          
+          # 在文件末尾追加社区提供的、正确的 gflags 和 glog 定义
+          cat <<EOF >> WORKSPACE
+
+git_repository(
+    name = "gflags",
+    remote = "https://github.com/gflags/gflags.git",
+    tag = "v2.2.2",
+)
+
+git_repository(
+    name = "com_google_glog",
+    remote = "https://github.com/google/glog.git",
+    commit = "v0.6.0",
+)
+EOF
           echo "WORKSPACE file patched successfully."
 
       - name: Set up Python 3.9
