@@ -1,6 +1,3 @@
-# 最终的、最可靠的 GitHub Actions workflow 配置文件
-# 文件路径: .github/workflows/c-cpp.yml
-
 name: Build Android Example
 
 on:
@@ -23,107 +20,104 @@ jobs:
         uses: actions/checkout@v4
 
       # ====================================================================
-      # 最终方案：直接用一个已修正的、完整的 WORKSPACE 文件覆盖旧文件
-      # 这可以从根本上避免所有 sed 和 YAML 语法问题
+      # 最终方案：使用 'echo' 命令逐行写入，彻底避免 YAML 解析错误
       # ====================================================================
-      - name: Overwrite WORKSPACE with a corrected version
+      - name: Recreate WORKSPACE file line-by-line
         run: |
-          echo "Overwriting WORKSPACE file to fix all dependency issues..."
-          cat > WORKSPACE << 'EOF'
-# Copyright 2021 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-workspace(name = "lyra")
-
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
-
-# TensorFlow.
-http_archive(
-    name = "org_tensorflow",
-    sha256 = "c241ea9b392398904bceac5c1844f9175b5a8377759c256747d6d7e97d165df9",
-    strip_prefix = "tensorflow-2.5.0",
-    urls = ["https://github.com/tensorflow/tensorflow/archive/v2.5.0.tar.gz"],
-)
-
-load("@org_tensorflow//tensorflow:workspace3.bzl", "tf_workspace")
-
-tf_workspace(tf_repo_name = "org_tensorflow")
-
-git_repository(
-    name = "com_google_protobuf",
-    commit = "fd8aabf32d1d1ae3319e280fed07aa6eb24d150d",
-    remote = "https://github.com/protocolbuffers/protobuf",
-    shallow_since = "1614800268 -0800",
-)
-
-# Abseil
-git_repository(
-    name = "com_google_absl",
-    commit = "215105818dfde3174fe799600bb0f3cae233d0bf",
-    remote = "https://github.com/abseil/abseil-cpp",
-    shallow_since = "1635953174 -0400",
-)
-
-# Googletest
-git_repository(
-    name = "com_google_googletest",
-    commit = "703bd9caab50b139428c2ea8af6c8a74a1203425",
-    remote = "https://github.com/google/googletest",
-    shallow_since = "1610134441 -0800",
-)
-
-# Filesystem
-new_git_repository(
-    name = "gulrak_filesystem",
-    build_file_content = """
-package(default_visibility = ["//visibility:public"])
-cc_library(
-    name = "filesystem",
-    hdrs = glob(["include/ghc/**/*.hpp"]),
-    includes = ["include"],
-)
-""",
-    commit = "7e37433f318488ae4bc80f80e12df12a01579874",
-    remote = "https://github.com/gulrak/filesystem",
-    shallow_since = "1602313866 +0200",
-)
-
-# audio_dsp
-git_repository(
-    name = "com_google_audio_dsp",
-    commit = "d3b3310e30327f3d3d63c5a77884869501511218",
-    remote = "https://github.com/google/audio_dsp.git",
-    shallow_since = "1662684571 -0700",
-)
-
-# Correct gflags definition
-git_repository(
-    name = "gflags",
-    remote = "https://github.com/gflags/gflags.git",
-    tag = "v2.2.2",
-)
-
-# Correct glog definition
-git_repository(
-    name = "com_google_glog",
-    remote = "https://github.com/google/glog.git",
-    commit = "v0.6.0",
-)
-EOF
-          echo "WORKSPACE file has been overwritten successfully."
-
+          echo "Recreating WORKSPACE file to fix all dependency issues..."
+          echo '# Copyright 2021 Google LLC' > WORKSPACE
+          echo '#' >> WORKSPACE
+          echo '# Licensed under the Apache License, Version 2.0 (the "License");' >> WORKSPACE
+          echo '# you may not use this file except in compliance with the License.' >> WORKSPACE
+          echo '# You may obtain a copy of the License at' >> WORKSPACE
+          echo '#' >> WORKSPACE
+          echo '#      http://www.apache.org/licenses/LICENSE-2.0' >> WORKSPACE
+          echo '#' >> WORKSPACE
+          echo '# Unless required by applicable law or agreed to in writing, software' >> WORKSPACE
+          echo '# distributed under the License is distributed on an "AS IS" BASIS,' >> WORKSPACE
+          echo '# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.' >> WORKSPACE
+          echo '# See the License for the specific language governing permissions and' >> WORKSPACE
+          echo '# limitations under the License.' >> WORKSPACE
+          echo '' >> WORKSPACE
+          echo 'workspace(name = "lyra")' >> WORKSPACE
+          echo '' >> WORKSPACE
+          echo 'load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")' >> WORKSPACE
+          echo 'load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")' >> WORKSPACE
+          echo '' >> WORKSPACE
+          echo '# TensorFlow.' >> WORKSPACE
+          echo 'http_archive(' >> WORKSPACE
+          echo '    name = "org_tensorflow",' >> WORKSPACE
+          echo '    sha256 = "c241ea9b392398904bceac5c1844f9175b5a8377759c256747d6d7e97d165df9",' >> WORKSPACE
+          echo '    strip_prefix = "tensorflow-2.5.0",' >> WORKSPACE
+          echo '    urls = ["https://github.com/tensorflow/tensorflow/archive/v2.5.0.tar.gz"],' >> WORKSPACE
+          echo ')' >> WORKSPACE
+          echo '' >> WORKSPACE
+          echo 'load("@org_tensorflow//tensorflow:workspace3.bzl", "tf_workspace")' >> WORKSPACE
+          echo '' >> WORKSPACE
+          echo 'tf_workspace(tf_repo_name = "org_tensorflow")' >> WORKSPACE
+          echo '' >> WORKSPACE
+          echo 'git_repository(' >> WORKSPACE
+          echo '    name = "com_google_protobuf",' >> WORKSPACE
+          echo '    commit = "fd8aabf32d1d1ae3319e280fed07aa6eb24d150d",' >> WORKSPACE
+          echo '    remote = "https://github.com/protocolbuffers/protobuf",' >> WORKSPACE
+          echo '    shallow_since = "1614800268 -0800",' >> WORKSPACE
+          echo ')' >> WORKSPACE
+          echo '' >> WORKSPACE
+          echo '# Abseil' >> WORKSPACE
+          echo 'git_repository(' >> WORKSPACE
+          echo '    name = "com_google_absl",' >> WORKSPACE
+          echo '    commit = "215105818dfde3174fe799600bb0f3cae233d0bf",' >> WORKSPACE
+          echo '    remote = "https://github.com/abseil/abseil-cpp",' >> WORKSPACE
+          echo '    shallow_since = "1635953174 -0400",' >> WORKSPACE
+          echo ')' >> WORKSPACE
+          echo '' >> WORKSPACE
+          echo '# Googletest' >> WORKSPACE
+          echo 'git_repository(' >> WORKSPACE
+          echo '    name = "com_google_googletest",' >> WORKSPACE
+          echo '    commit = "703bd9caab50b139428c2ea8af6c8a74a1203425",' >> WORKSPACE
+          echo '    remote = "https://github.com/google/googletest",' >> WORKSPACE
+          echo '    shallow_since = "1610134441 -0800",' >> WORKSPACE
+          echo ')' >> WORKSPACE
+          echo '' >> WORKSPACE
+          echo '# Filesystem' >> WORKSPACE
+          echo 'new_git_repository(' >> WORKSPACE
+          echo '    name = "gulrak_filesystem",' >> WORKSPACE
+          echo '    build_file_content = """' >> WORKSPACE
+          echo 'package(default_visibility = ["//visibility:public"])' >> WORKSPACE
+          echo 'cc_library(' >> WORKSPACE
+          echo '    name = "filesystem",' >> WORKSPACE
+          echo '    hdrs = glob(["include/ghc/**/*.hpp"]),' >> WORKSPACE
+          echo '    includes = ["include"],' >> WORKSPACE
+          echo ')' >> WORKSPACE
+          echo '""",' >> WORKSPACE
+          echo '    commit = "7e37433f318488ae4bc80f80e12df12a01579874",' >> WORKSPACE
+          echo '    remote = "https://github.com/gulrak/filesystem",' >> WORKSPACE
+          echo '    shallow_since = "1602313866 +0200",' >> WORKSPACE
+          echo ')' >> WORKSPACE
+          echo '' >> WORKSPACE
+          echo '# audio_dsp' >> WORKSPACE
+          echo 'git_repository(' >> WORKSPACE
+          echo '    name = "com_google_audio_dsp",' >> WORKSPACE
+          echo '    commit = "d3b3310e30327f3d3d63c5a77884869501511218",' >> WORKSPACE
+          echo '    remote = "https://github.com/google/audio_dsp.git",' >> WORKSPACE
+          echo '    shallow_since = "1662684571 -0700",' >> WORKSPACE
+          echo ')' >> WORKSPACE
+          echo '' >> WORKSPACE
+          echo '# Correct gflags definition' >> WORKSPACE
+          echo 'git_repository(' >> WORKSPACE
+          echo '    name = "gflags",' >> WORKSPACE
+          echo '    remote = "https://github.com/gflags/gflags.git",' >> WORKSPACE
+          echo '    tag = "v2.2.2",' >> WORKSPACE
+          echo ')' >> WORKSPACE
+          echo '' >> WORKSPACE
+          echo '# Correct glog definition' >> WORKSPACE
+          echo 'git_repository(' >> WORKSPACE
+          echo '    name = "com_google_glog",' >> WORKSPACE
+          echo '    remote = "https://github.com/google/glog.git",' >> WORKSPACE
+          echo '    commit = "v0.6.0",' >> WORKSPACE
+          echo ')' >> WORKSPACE
+          echo "WORKSPACE file has been recreated successfully."
+          
       - name: Set up Python 3.9
         uses: actions/setup-python@v5
         with:
@@ -175,6 +169,7 @@ EOF
           PY_BIN="$(which python)"
           echo "Using PYTHON_BIN_PATH=$PY_BIN"
           # Added --incompatible_legacy_local_fallback=false to solve potential TensorFlow configure issues
+          # Also updating build command to match repo's example
           TF_NEED_CUDA=0 bazel build -c opt \
             --config=android_arm64 \
             //lyra/android_example:lyra_android_example
@@ -182,10 +177,10 @@ EOF
       - name: Collect artifact
         run: |
           mkdir -p action-product
-          cp bazel-bin/lyra/android_example/lyra_android_example.apk action-product/lyra_example-fat.apk
+          cp bazel-bin/lyra/android_example/lyra_android_example.apk action-product/lyra_example.apk
           
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: lyra-android-example-fat
+          name: lyra-android-example
           path: action-product/
